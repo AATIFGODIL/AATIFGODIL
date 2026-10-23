@@ -472,17 +472,22 @@ const repoRows = data.repos.map((repo, i) => {
 for (const [file, svg] of Object.entries(files)) writeFileSync(join(OUT, file), svg);
 
 const img = (file, alt) => `<img src="svg/${file}" width="100%" alt="${esc(alt)}">`;
+// GitHub wraps every README image that isn't already in a link in one to the
+// image itself, so clicking a panel opened the raw SVG. An anchor with no
+// href is a link to nowhere: the panels that aren't meant to go anywhere sit
+// in one, and click through to nothing.
+const still = (file, alt) => `<a>${img(file, alt)}</a>`;
 const readme = `<div align="center">
 
-${img("header.svg", `Aatif Godil — ${config.taglines.join(" ")}`)}
+${still("header.svg", `Aatif Godil — ${config.taglines.join(" ")}`)}
 
-${img("contributions.svg", `${data.total.toLocaleString("en-US")} contributions`)}
+${still("contributions.svg", `${data.total.toLocaleString("en-US")} contributions`)}
 
-${img("repositories.svg", "Repositories")}
+${still("repositories.svg", "Repositories")}
 ${repoRows.map((r) => `<a href="${r.url}">${img(r.file, r.label)}</a>`).join("<br>\n")}
 
-${img("tools.svg", "Tools")}
-${img("toolbelt.svg", config.tools.map((t) => t.name).join(", "))}
+${still("tools.svg", "Tools")}
+${still("toolbelt.svg", config.tools.map((t) => t.name).join(", "))}
 
 <a href="${config.site.url}">${img("site.svg", config.site.label)}</a>
 

@@ -473,10 +473,12 @@ for (const [file, svg] of Object.entries(files)) writeFileSync(join(OUT, file), 
 
 const img = (file, alt) => `<img src="svg/${file}" width="100%" alt="${esc(alt)}">`;
 // GitHub wraps every README image that isn't already in a link in one to the
-// image itself, so clicking a panel opened the raw SVG. An anchor with no
-// href is a link to nowhere: the panels that aren't meant to go anywhere sit
-// in one, and click through to nothing.
-const still = (file, alt) => `<a>${img(file, alt)}</a>`;
+// image itself, so clicking a panel opened the raw SVG. The panels that
+// aren't meant to go anywhere link to a spot on the page that doesn't exist
+// instead, so a click goes nowhere. Not an anchor with no href — GitHub
+// strips that and links the image anyway — and not a bare "#", which jumps
+// to the top.
+const still = (file, alt) => `<a href="#aatif">${img(file, alt)}</a>`;
 const readme = `<div align="center">
 
 ${still("header.svg", `Aatif Godil — ${config.taglines.join(" ")}`)}

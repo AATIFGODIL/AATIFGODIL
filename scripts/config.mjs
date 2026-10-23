@@ -11,12 +11,10 @@ export default {
 
   /**
    * The number on the contributions panel, for the last year. `null` is
-   * GitHub's public count, refreshed every day. Pinned to the count the
-   * profile shows signed in, private repos included, which the public count
-   * leaves out while "Private contributions" is off in the profile's
-   * contribution settings. Turn that on and this can go back to `null`.
+   * GitHub's own count, refreshed every day — private repos included, now
+   * the profile shares private contributions. A number pins it instead.
    */
-  contributions: 1867,
+  contributions: null,
 
   repos: {
     /** Public, not forks, newest push first; minus these. */

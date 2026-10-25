@@ -2,7 +2,7 @@
 
 <a href="#aatif"><img src="svg/header.svg" width="100%" alt="Aatif Godil — DEVELOPER. ATHLETE. STUDENT. FOUNDER."></a>
 
-<a href="#aatif"><img src="svg/contributions.svg" width="100%" alt="1,872 contributions"></a>
+<a href="#aatif"><img src="svg/contributions.svg" width="100%" alt="1,879 contributions"></a>
 
 <a href="#aatif"><img src="svg/repositories.svg" width="100%" alt="Repositories"></a>
 <a href="https://github.com/AATIFGODIL/InvestWise"><img src="svg/repos/investwise.svg" width="100%" alt="InvestWise"></a><br>

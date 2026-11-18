@@ -30,21 +30,30 @@ const M = 40; // side margin
 /** The portfolio's ramp: near-black ink, a lilac so pale it reads as white,
  *  the site violet and a pale lilac either side of it. */
 const C = {
-  ink: "#0b0814",
+  ink: "#0a0910",
   rule: "#221a33",
   white: "#ffffff",
   lilac: "#efe7ff",
   violet: "#8f4dff",
   pale: "#d9c8ff",
   accent: "#ae8cff",
+  /** The site's type colours: bone for what matters, a muted grey for the rest. */
+  bone: "#ede8df",
+  mute: "#8f8a99",
+  /** The sculpture's violet, toned down — as the site sets its project numbers. */
+  knot: "#a487f0",
   levels: ["#1a1426", "#3b2468", "#6236b8", "#8f4dff", "#d9c8ff"],
 };
 
 // ─── Type ────────────────────────────────────────────────────────────────────
 
-const FONT = readFileSync(asset("fonts", "inter-black.woff")).toString("base64");
-const METRICS = JSON.parse(readFileSync(asset("fonts", "inter-black.json"), "utf8"));
-const FACE = `@font-face{font-family:IB;font-weight:900;src:url(data:font/woff;base64,${FONT}) format("woff")}`;
+// The site's own display type, Mona Sans, at its Wide Black (wdth 125, wght 900).
+const FONT = readFileSync(asset("fonts", "mona-sans.woff2")).toString("base64");
+const METRICS = JSON.parse(readFileSync(asset("fonts", "mona-sans-wide-black.json"), "utf8"));
+const MONA_METRICS = METRICS;
+const FACE = `@font-face{font-family:MS;font-weight:200 900;font-stretch:75% 125%;src:url(data:font/woff2;base64,${FONT}) format("woff2")}`;
+/** The site's own lockup (aatifgodil.in, src/lib/signature.ts): AATIF's letters, godil's ink, the dot. */
+const LOCKUP = JSON.parse(readFileSync(asset("lockup.json"), "utf8"));
 /** Cap height, as a fraction of the font size. */
 const CAP = METRICS.capHeight / METRICS.unitsPerEm;
 /** Inter Black at display sizes wants pulling in a touch. */
@@ -64,13 +73,20 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 function text(str, { x = 0, y = 0, size, fill = "none", stroke, sw = 0, anchor = "start", attrs = "" }) {
   const outline = stroke ? ` stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"` : "";
-  return `<text x="${n(x)}" y="${n(y)}" font-size="${n(size)}" letter-spacing="${n(TRACK * size)}" text-anchor="${anchor}" fill="${fill}"${outline}${attrs}>${esc(str)}</text>`;
+  return `<text x="${n(x)}" y="${n(y)}" font-size="${n(size)}" letter-spacing="${n(TRACK * size)}" text-anchor="${anchor}" fill="${fill}"${outline} ${size >= 40 ? ` filter="url(#round-${Math.round(size)})"` : ""}${attrs}>${esc(str)}</text>`;
+}
+
+/** The site's rounding for its headline type (40 px and up), one filter per size used: a blur at
+ *  2% of the size, then a hard threshold — every corner softened. */
+function roundFilters(body) {
+  const sizes = [...new Set([...body.matchAll(/url\(#round-(\d+)\)/g)].map((m) => +m[1]))];
+  return `<defs>${sizes.map((px) => `<filter id="round-${px}" x="-5%" y="-20%" width="110%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${n(Math.max(0.35, px * 0.02))}"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"/></filter>`).join("")}</defs>`;
 }
 
 function doc(h, label, body, css = "") {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" role="img" aria-label="${esc(label)}">
 <title>${esc(label)}</title>
-<style>${FACE}text{font-family:IB,"Arial Black",sans-serif;font-weight:900}${css}</style>
+<style>${FACE}text{font-family:MS,"Arial Black",sans-serif;font-weight:900;font-stretch:125%}${css}</style>${roundFilters(body)}
 <rect width="${W}" height="${h}" fill="${C.ink}"/>
 ${body}
 </svg>
@@ -191,34 +207,90 @@ ${tears.join("\n")}
 </g>`;
 }
 
+/** Mona Sans Wide Black, the site's display type: width of `str` at `size`. */
+const monaWidth = (str, size, track = 0) =>
+  [...str].reduce((w, ch) => w + (MONA_METRICS.advances[ch] ?? MONA_METRICS.advances.M) / MONA_METRICS.unitsPerEm + track, 0) * size;
+const MONA_CAP = MONA_METRICS.capHeight / MONA_METRICS.unitsPerEm;
+function mona(str, { x, y, size, fill, track = 0 }) {
+  return `<text x="${n(x)}" y="${n(y)}" font-family="MS" font-weight="900" font-stretch="125%" font-size="${n(size)}" letter-spacing="${n(track * size)}" fill="${fill}">${esc(str)}</text>`;
+}
+
+/** The lockup as on the site, `width` wide with its top-left at (x, y). */
+function lockup({ x, y, width }) {
+  const [vx, vy, vw] = LOCKUP.viewBox.split(" ").map(Number);
+  const k = width / vw;
+  const keyline = C.ink;
+  return `<defs><radialGradient id="chrome" cx="36%" cy="30%" r="78%"><stop offset="0%" stop-color="#FBF7FF"/><stop offset="32%" stop-color="#CDB3FF"/><stop offset="68%" stop-color="#9B6BFF"/><stop offset="100%" stop-color="#5B2BD0"/></radialGradient></defs>
+<g transform="translate(${n(x - vx * k)} ${n(y - vy * k)}) scale(${n(k)})">
+${LOCKUP.letters.map((d) => `<path d="${d}" fill="#EDE8DF" fill-rule="evenodd"/>`).join("")}
+<g transform="${LOCKUP.godilTransform}">
+<path d="${LOCKUP.godil}" fill="${keyline}" stroke="${keyline}" stroke-width="${LOCKUP.keyline}" stroke-linejoin="round" fill-rule="evenodd"/>
+<path d="${LOCKUP.godil}" fill="#B794FF" fill-rule="evenodd"/>
+<path d="${LOCKUP.dot}" fill="url(#chrome)" stroke="${keyline}" stroke-width="${LOCKUP.keyline}" stroke-linejoin="round" paint-order="stroke"/>
+</g></g>`;
+}
+
+/** How long the photo's dream takes, round trip: mostly himself, then the
+ *  glowing violet silhouette from the site's photo hover, and back. */
+const DREAM = { dur: 9, frames: "0;0;1;1;0;0", times: "0;0.42;0.52;0.8;0.9;1" };
+
+/**
+ * The photo, as on the site: on its own clock it turns into the photo hover's
+ * silhouette — a flat lilac figure, fine dark grain all through it, soft edges,
+ * two faint echoes trailing it (the trance) — and comes back. No glow round it.
+ */
+function dreamPortrait({ x, y, h }) {
+  const w = (h * PHOTO_SIZE.w) / PHOTO_SIZE.h;
+  return `<defs>
+<filter id="dream" x="-30%" y="-15%" width="140%" height="130%" color-interpolation-filters="sRGB">
+<feFlood flood-color="#a58cd0"/><feComposite in2="SourceAlpha" operator="in"/><feGaussianBlur stdDeviation="2.2" result="sil"/>
+<feTurbulence type="fractalNoise" baseFrequency="1.15" numOctaves="1" seed="7" result="noise"/>
+<feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.28  0 0 0 0 0.22  0 0 0 0 0.42  -1.6 0 0 0 1.05" result="specks"/>
+<feComposite in="specks" in2="sil" operator="in" result="grain"/>
+<feOffset in="sil" dx="-18" result="o1"/><feColorMatrix in="o1" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .32 0" result="echo1"/>
+<feOffset in="sil" dx="-36" result="o2"/><feColorMatrix in="o2" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .16 0" result="echo2"/>
+<feMerge><feMergeNode in="echo2"/><feMergeNode in="echo1"/><feMergeNode in="sil"/><feMergeNode in="grain"/></feMerge>
+</filter>
+<image id="face" href="data:image/webp;base64,${PHOTO}" x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}"/>
+</defs>
+<use href="#face"/>
+<g opacity="0"><animate attributeName="opacity" values="${DREAM.frames}" keyTimes="${DREAM.times}" dur="${DREAM.dur}s" repeatCount="indefinite"/>
+<rect x="${n(x - 20)}" y="${n(y)}" width="${n(w + 40)}" height="${n(h)}" fill="${C.ink}" opacity=".55"/>
+<use href="#face" filter="url(#dream)"/>
+</g>`;
+}
+
 // ─── Panels ──────────────────────────────────────────────────────────────────
 
 function header() {
   const H = 540;
-  const photoH = 470;
+  const photoH = 390;
   const photoW = (photoH * PHOTO_SIZE.w) / PHOTO_SIZE.h;
   const photoX = W - photoW + 20; // the far shoulder runs off the edge
   // The name stops short of the head, which starts ~21% into the photo.
   const room = photoX + photoW * 0.21 - M - 16;
-  const size = Math.floor(Math.min(fit("AATIF", room, 170), fit("GODIL", room, 170)));
-  const line1 = 46 + size * CAP;
-  const line2 = line1 + size * 0.88;
+  const lockW = Math.min(room, 470);
+  const [, , vw, vh] = LOCKUP.viewBox.split(" ").map(Number);
+  const lockY = 60;
+  const lockH = (lockW * vh) / vw;
 
-  const tagSize = 60;
-  const tagY = line2 + 58 + tagSize * CAP;
+  // The site's three worlds, one at a time, in its own display type.
+  const tagSize = Math.floor(Math.min(60, ...config.taglines.map((t) => room / monaWidth(t, 1, 0.04))));
+  const tagY = lockY + lockH + 64 + tagSize * MONA_CAP;
   const slot = 100 / config.taglines.length;
-  const DUR = 2 * config.taglines.length;
+  const DUR = 2.4 * config.taglines.length;
   const taglines = config.taglines.map((word, i) => {
     const show = i === 0 ? [[0, 1], [slot, 0]] : [[0, 0], [i * slot, 1], [(i + 1) * slot, 0]];
-    // A violet copy jumps off it for the first beat of each word.
-    const flash = i === 0 ? [[0, 1], [2, 0]] : [[0, 0], [i * slot, 1], [i * slot + 2, 0]];
-    return `<g opacity="0">${discrete("opacity", show, DUR)}${text(word, { x: M, y: tagY, size: tagSize, fill: C.accent })}</g>
-<g opacity="0" style="mix-blend-mode:screen">${discrete("opacity", flash, DUR)}${text(word, { x: M + 7, y: tagY - 3, size: tagSize, fill: C.violet })}</g>`;
+    return `<g opacity="0">${discrete("opacity", show, DUR)}<g filter="url(#hollowType)">${mona(word, { x: M, y: tagY, size: tagSize, fill: "#EDE8DF", track: 0.04 })}</g></g>`;
   });
+  // As the site's worlds set their words: rounded (a blur at 2% of the size,
+  // a hard threshold), then only the outline round the whole word — no fill,
+  // and no borders inside where the letters meet.
+  const soft = `<defs><filter id="hollowType" x="-5%" y="-20%" width="110%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${n(tagSize * 0.02)}"/><feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="soft"/><feMorphology in="soft" operator="dilate" radius="0.9" result="grown"/><feComposite in="grown" in2="soft" operator="out"/></filter></defs>`;
 
-  const body = `${portrait({ x: photoX, y: H - photoH, h: photoH })}
-${glitchWord("AATIF", { x: M, y: line1, size, sw: 3, id: "n1", phase: PHASES[0] })}
-${glitchWord("GODIL", { x: M, y: line2, size, sw: 3, id: "n2", phase: PHASES[1] })}
+  const body = `${dreamPortrait({ x: photoX, y: H - photoH, h: photoH })}
+${lockup({ x: M, y: lockY, width: lockW })}
+${soft}
 ${taglines.join("\n")}`;
   return doc(H, `Aatif Godil — ${config.taglines.join(" ").toLowerCase()}`, body);
 }
@@ -253,12 +325,12 @@ function contributions({ total, weeks }) {
   const css = [];
   for (const ch of number) {
     if (ch === ",") {
-      digits.push(text(",", { x, y: line1, size, fill: C.white }));
+      digits.push(text(",", { x, y: line1, size, fill: C.bone }));
       x += advance(",") * size;
       continue;
     }
     const d = +ch;
-    const strip = Array.from({ length: 20 }, (_, k) => text(String(k % 10), { x: x + cell / 2, y: line1 + k * lineH, size, fill: C.white, anchor: "middle" })).join("");
+    const strip = Array.from({ length: 20 }, (_, k) => text(String(k % 10), { x: x + cell / 2, y: line1 + k * lineH, size, fill: C.bone, anchor: "middle" })).join("");
     css.push(`@keyframes r${col}{0%,70%{transform:translateY(${n(-d * lineH)}px)}100%{transform:translateY(${n(-(d + 10) * lineH)}px)}}.r${col}{animation:r${col} 9s cubic-bezier(.7,0,.15,1) ${n(col * 0.14)}s infinite both}`);
     digits.push(`<clipPath id="win${col}"><rect x="${n(x)}" y="${n(winTop)}" width="${n(cell)}" height="${n(lineH)}"/></clipPath><g clip-path="url(#win${col})"><g class="r${col}">${strip}</g></g>`);
     x += cell;
@@ -314,16 +386,16 @@ function contributions({ total, weeks }) {
   const swGap = 8;
   const more = measure("MORE", legendSize);
   let lx = W - M - pad - more;
-  const legend = [text("MORE", { x: lx, y: legendBase, size: legendSize, fill: C.lilac })];
+  const legend = [text("MORE", { x: lx, y: legendBase, size: legendSize, fill: C.mute })];
   lx -= 20 + C.levels.length * (sw + swGap) - swGap;
   C.levels.forEach((colour, i) => legend.push(`<rect x="${n(lx + i * (sw + swGap))}" y="${n(legendBase - (legendSize * CAP) / 2 - sw / 2)}" width="${sw}" height="${sw}" rx="5" fill="${colour}"/>`));
-  legend.push(text("LESS", { x: lx - 20, y: legendBase, size: legendSize, fill: C.lilac, anchor: "end" }));
+  legend.push(text("LESS", { x: lx - 20, y: legendBase, size: legendSize, fill: C.mute, anchor: "end" }));
 
   const boxBottom = legendBase + pad;
   const h = boxBottom + 36;
   const body = `${digits.join("\n")}
-${text(word, { x: wordX, y: line1, size, fill: C.lilac })}
-${text("IN THE LAST YEAR", { x: M, y: line2, size, fill: C.accent })}
+${text(word, { x: wordX, y: line1, size, fill: C.bone })}
+${text("IN THE LAST YEAR", { x: M, y: line2, size, fill: C.mute })}
 <rect x="${M}" y="${n(boxTop)}" width="${W - 2 * M}" height="${n(boxBottom - boxTop)}" rx="14" fill="${BOX}" stroke="${C.rule}" stroke-width="2"/>
 ${blocks.join("")}
 ${today}
@@ -337,8 +409,8 @@ function heading(word, count) {
   const size = 76;
   const base = H / 2 + (size * CAP) / 2;
   const body = `<rect x="${M}" y="${n(base - size * CAP)}" width="22" height="${n(size * CAP)}" fill="${C.violet}"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" repeatCount="indefinite"/></rect>
-${text(word, { x: M + 44, y: base, size, fill: C.white })}
-${count != null ? text(String(count).padStart(2, "0"), { x: W - M, y: base, size, fill: C.accent, anchor: "end" }) : ""}`;
+${text(word, { x: M + 44, y: base, size, fill: C.bone })}
+${count != null ? text(String(count).padStart(2, "0"), { x: W - M, y: base, size, fill: C.mute, anchor: "end" }) : ""}`;
   return doc(H, word.toLowerCase(), body);
 }
 
@@ -367,10 +439,10 @@ function linkRow(label, { index = 0, count = 1, numbered = true }) {
 @keyframes bar{0%,${at(start)}%{transform:scaleX(0);opacity:1}${at(start + 0.6)}%{transform:scaleX(1);opacity:1}${at(start + 1.3)}%,100%{transform:scaleX(1);opacity:0}}
 .arw{animation:arw 2.4s ease-in-out ${n(index * 0.3)}s infinite}
 @keyframes arw{0%,100%{transform:translate(0,0)}50%{transform:translate(5px,-5px)}}`;
-  const body = `${numbered ? text(String(index + 1).padStart(2, "0"), { x: M, y: base, size: 56, fill: C.violet }) : ""}
-${text(name, { x: nameX, y: base, size, fill: C.white })}
+  const body = `${numbered ? text(String(index + 1).padStart(2, "0"), { x: M, y: base, size: 56, fill: C.knot }) : ""}
+${text(name, { x: nameX, y: base, size, fill: C.bone })}
 <rect class="bar" x="${nameX}" y="${n(base + 16)}" width="${n(measure(name, size))}" height="7" fill="${C.accent}"/>
-<g class="arw">${arrow(W - M - arrowS, base - (size * CAP) / 2 - arrowS / 2, arrowS, C.accent)}</g>
+<g class="arw">${arrow(W - M - arrowS, base - (size * CAP) / 2 - arrowS / 2, arrowS, C.knot)}</g>
 <rect y="${H - 1}" width="${W}" height="1" fill="${C.rule}"/>`;
   return doc(H, label, body, css);
 }
@@ -402,7 +474,7 @@ function tools() {
       const { viewBox, inner } = icons[key];
       items.push(`<svg x="${n(x)}" y="${n(mid - icon / 2)}" width="${icon}" height="${icon}" viewBox="${viewBox}" fill="${C.white}">${inner}</svg>`);
       x += icon + gapIcon;
-      items.push(text(name.toUpperCase(), { x, y: mid + (size * CAP) / 2, size, fill: r ? C.accent : C.lilac }));
+      items.push(text(name.toUpperCase(), { x, y: mid + (size * CAP) / 2, size, fill: r ? C.mute : C.bone }));
       x += measure(name.toUpperCase(), size) + gapItem;
     }
     const span = n(x);

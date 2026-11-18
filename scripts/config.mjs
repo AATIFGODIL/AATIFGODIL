@@ -6,8 +6,8 @@ export default {
   login: "AATIFGODIL",
   site: { url: "https://aatifgodil.in", label: "AATIFGODIL.IN" },
 
-  /** Under the name, one at a time — the portfolio's taglines, in its order. */
-  taglines: ["DEVELOPER.", "ATHLETE.", "STUDENT.", "FOUNDER."],
+  /** Under the name, one at a time — the portfolio's three worlds (its name hover), in its order. */
+  taglines: ["CREATIVE DEVELOPER.", "ASPIRING FOUNDER.", "BASED IN MELBOURNE."],
 
   /**
    * The number on the contributions panel, for the last year. `null` is

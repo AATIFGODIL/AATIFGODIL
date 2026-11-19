@@ -280,8 +280,15 @@ function header() {
   const slot = 100 / config.taglines.length;
   const DUR = 2.4 * config.taglines.length;
   const taglines = config.taglines.map((word, i) => {
-    const show = i === 0 ? [[0, 1], [slot, 0]] : [[0, 0], [i * slot, 1], [(i + 1) * slot, 0]];
-    return `<g opacity="0">${discrete("opacity", show, DUR)}<g filter="url(#hollowType)">${mona(word, { x: M, y: tagY, size: tagSize, fill: "#EDE8DF", track: 0.04 })}</g></g>`;
+    // A clean fade from one line to the next: each eases in, holds, and eases
+    // out as the next eases in. Key times must rise, so at the ends of the
+    // loop the duplicate 0 and 1 keys fall away.
+    const fade = 0.5 / DUR, from = (i * slot) / 100, to = ((i + 1) * slot) / 100;
+    const frames = [[0, 0], [from, 0], [from + fade, 1], [to - fade, 1], [to, 0], [1, 0]]
+      .filter(([k], j, all) => j === 0 || k > all[j - 1][0] + 1e-6);
+    const splines = frames.slice(1).map(([, v], j) => (v === frames[j][1] ? "0 0 1 1" : ".4 0 .2 1")).join(";");
+    const fader = `<animate attributeName="opacity" values="${frames.map(([, v]) => v).join(";")}" keyTimes="${frames.map(([k]) => n(k)).join(";")}" keySplines="${splines}" calcMode="spline" dur="${DUR}s" repeatCount="indefinite"/>`;
+    return `<g opacity="0">${fader}<g filter="url(#hollowType)">${mona(word, { x: M, y: tagY, size: tagSize, fill: "#EDE8DF", track: 0.04 })}</g></g>`;
   });
   // As the site's worlds set their words: rounded (a blur at 2% of the size,
   // a hard threshold), then only the outline round the whole word — no fill,

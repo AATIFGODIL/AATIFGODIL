@@ -2,7 +2,7 @@
 
 <a href="#aatif"><img src="svg/header.svg" width="100%" alt="Aatif Godil — CREATIVE DEVELOPER. ASPIRING FOUNDER. BASED IN MELBOURNE."></a>
 
-<a href="#aatif"><img src="svg/contributions.svg" width="100%" alt="1,349 contributions"></a>
+<a href="#aatif"><img src="svg/contributions.svg" width="100%" alt="1,352 contributions"></a>
 
 <a href="#aatif"><img src="svg/repositories.svg" width="100%" alt="Repositories"></a>
 <a href="https://github.com/AATIFGODIL/InvestWise"><img src="svg/repos/investwise.svg" width="100%" alt="InvestWise"></a><br>
